@@ -1,0 +1,6 @@
+POST http://localhost:5000/api/test-email
+Content-Type: application/json
+
+{
+  "email": "your-email@gmail.com"
+}

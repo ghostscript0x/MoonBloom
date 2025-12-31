@@ -1,0 +1,283 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Warm, cozy color palette */
+    --background: 30 40% 98%;
+    --foreground: 20 30% 20%;
+
+    --card: 30 50% 99%;
+    --card-foreground: 20 30% 20%;
+
+    --popover: 30 50% 99%;
+    --popover-foreground: 20 30% 20%;
+
+    /* Soft lavender primary */
+    --primary: 280 50% 70%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 280 60% 85%;
+
+    /* Blush pink secondary */
+    --secondary: 350 60% 92%;
+    --secondary-foreground: 350 50% 35%;
+
+    /* Warm muted tones */
+    --muted: 30 30% 94%;
+    --muted-foreground: 20 15% 50%;
+
+    /* Coral accent */
+    --accent: 15 75% 75%;
+    --accent-foreground: 15 60% 25%;
+
+    /* Gentle destructive */
+    --destructive: 0 50% 70%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 30 30% 90%;
+    --input: 30 30% 92%;
+    --ring: 280 50% 70%;
+
+    --radius: 1rem;
+
+    /* Custom tokens for period tracker */
+    --period: 350 65% 70%;
+    --period-light: 350 70% 92%;
+    --fertile: 160 50% 70%;
+    --fertile-light: 160 50% 92%;
+    --ovulation: 45 80% 70%;
+    --ovulation-light: 45 80% 92%;
+    
+    /* Mood colors */
+    --mood-great: 160 60% 65%;
+    --mood-good: 180 50% 70%;
+    --mood-okay: 45 70% 70%;
+    --mood-low: 30 60% 70%;
+    --mood-bad: 350 50% 70%;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(280 50% 70%) 0%, hsl(350 60% 80%) 50%, hsl(15 75% 80%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(30 50% 99%) 0%, hsl(30 40% 97%) 100%);
+    --gradient-period: linear-gradient(135deg, hsl(350 65% 75%) 0%, hsl(350 70% 85%) 100%);
+    
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -4px hsl(280 30% 70% / 0.2);
+    --shadow-card: 0 2px 12px -2px hsl(20 20% 50% / 0.1);
+    --shadow-glow: 0 0 30px hsl(280 50% 70% / 0.3);
+
+    /* Sidebar - keeping defaults */
+    --sidebar-background: 30 40% 98%;
+    --sidebar-foreground: 20 30% 20%;
+    --sidebar-primary: 280 50% 70%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 350 60% 92%;
+    --sidebar-accent-foreground: 350 50% 35%;
+    --sidebar-border: 30 30% 90%;
+    --sidebar-ring: 280 50% 70%;
+  }
+
+  .dark {
+    --background: 20 25% 10%;
+    --foreground: 30 30% 95%;
+
+    --card: 20 25% 12%;
+    --card-foreground: 30 30% 95%;
+
+    --popover: 20 25% 12%;
+    --popover-foreground: 30 30% 95%;
+
+    --primary: 280 45% 65%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 280 50% 50%;
+
+    --secondary: 350 40% 25%;
+    --secondary-foreground: 350 50% 85%;
+
+    --muted: 20 20% 18%;
+    --muted-foreground: 20 15% 60%;
+
+    --accent: 15 60% 50%;
+    --accent-foreground: 15 60% 95%;
+
+    --destructive: 0 50% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 20 20% 20%;
+    --input: 20 20% 20%;
+    --ring: 280 45% 65%;
+
+    --period: 350 55% 55%;
+    --period-light: 350 40% 25%;
+    --fertile: 160 40% 45%;
+    --fertile-light: 160 30% 20%;
+    --ovulation: 45 60% 50%;
+    --ovulation-light: 45 40% 20%;
+
+    --sidebar-background: 20 25% 10%;
+    --sidebar-foreground: 30 30% 95%;
+    --sidebar-primary: 280 45% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 350 40% 25%;
+    --sidebar-accent-foreground: 350 50% 85%;
+    --sidebar-border: 20 20% 20%;
+    --sidebar-ring: 280 45% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-sm border border-border/50 shadow-soft;
+  }
+
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .gradient-period {
+    background: var(--gradient-period);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.4s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out forwards;
+  }
+
+  .animate-bounce-soft {
+    animation: bounce-soft 0.6s ease-out;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bounce-soft {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
+}
+
+/* Safe area padding for mobile */
+.safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.safe-top {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
