@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiService } from '../lib/api';
-import { saveAuthToken, getAuthToken, removeAuthToken, saveUser, getUser, removeUser } from '../lib/offlineStorage';
+import { saveAuthToken, getAuthToken, removeAuthToken } from '../lib/offlineStorage';
 
 interface User {
   id: string;
@@ -47,27 +47,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       const token = getAuthToken();
-      const storedUser = getUser();
 
-      if (token && storedUser) {
+      if (token) {
         try {
           console.log('Verifying stored token...');
-          // Verify token with backend
+
+          // Get fresh user data from backend
           const response = await apiService.getCurrentUser();
-          console.log('Token valid, user authenticated');
+          const backendUser = response.data;
+
+          console.log('Backend user data:', backendUser);
+
           setUser({
-            ...storedUser,
-            lastPeriodStart: storedUser.lastPeriodStart ? new Date(storedUser.lastPeriodStart) : undefined,
+            ...backendUser,
+            lastPeriodStart: backendUser.lastPeriodStart ? new Date(backendUser.lastPeriodStart) : undefined,
           });
         } catch (error: any) {
-          console.log('Token invalid or user not found, clearing stored data:', error.message);
-          // Token invalid or user not found, clear stored data
-          removeAuthToken();
-          removeUser();
-          setUser(null);
+          console.log('Token invalid or user not found, logging out:', error.message);
+          // Token invalid or user not found, clear stored data and log out
+          logout();
+          // Force redirect to login page
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+          }
         }
       } else {
-        console.log('No stored token or user data');
+        console.log('No stored token');
+        setUser(null);
       }
       setIsLoading(false);
     };
@@ -82,7 +88,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { token, data: userData } = response;
 
       saveAuthToken(token);
-      saveUser(userData);
 
       setUser({
         ...userData,
@@ -102,7 +107,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { token, data: userData } = response;
 
       saveAuthToken(token);
-      saveUser(userData);
 
       setUser({
         ...userData,
@@ -137,7 +141,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (user) {
       const updatedUser = { ...user, emailVerified: true };
       setUser(updatedUser);
-      saveUser(updatedUser);
     }
   };
 
@@ -160,7 +163,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     removeAuthToken();
-    removeUser();
     setUser(null);
   };
 
@@ -168,7 +170,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
-      saveUser(updatedUser);
     }
   };
 

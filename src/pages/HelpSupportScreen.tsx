@@ -110,44 +110,65 @@ const HelpSupportScreen = () => {
               Frequently Asked Questions
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div className="border-b border-border/50 pb-3">
-                <h4 className="font-medium text-foreground mb-2">How accurate are the cycle predictions?</h4>
-                <p className="text-sm text-muted-foreground">
-                  Predictions are based on your historical data and become more accurate with regular logging (typically 3+ cycles).
-                </p>
-              </div>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <div className="border-b border-border/50 pb-3">
+                  <h4 className="font-medium text-foreground mb-2">🤖 How do AI insights work?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    AI analyzes your logged symptoms, mood, health metrics, and cycle patterns to provide personalized insights and predictions. More data = better insights!
+                  </p>
+                </div>
 
-              <div className="border-b border-border/50 pb-3">
-                <h4 className="font-medium text-foreground mb-2">Is my data secure?</h4>
-                <p className="text-sm text-muted-foreground">
-                  Yes, your data is encrypted and stored locally on your device. Optional cloud sync uses end-to-end encryption.
-                </p>
-              </div>
+                <div className="border-b border-border/50 pb-3">
+                  <h4 className="font-medium text-foreground mb-2">🌙 How accurate are the cycle predictions?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Predictions improve with regular logging. The calendar shows fertility windows and cycle phases based on your historical data.
+                  </p>
+                </div>
 
-              <div className="border-b border-border/50 pb-3">
-                <h4 className="font-medium text-foreground mb-2">Can I export my data?</h4>
-                <p className="text-sm text-muted-foreground">
-                  Yes, go to Profile → Wellness & Data → Export Data to download your information as a JSON file.
-                </p>
-              </div>
+                <div className="border-b border-border/50 pb-3">
+                  <h4 className="font-medium text-foreground mb-2">🔒 How does app lock work?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    App lock uses device biometric authentication (fingerprint/face) or PIN. Set it up in Profile → App lock for enhanced privacy.
+                  </p>
+                </div>
 
-              <div className="border-b border-border/50 pb-3">
-                <h4 className="font-medium text-foreground mb-2">How do I delete my account?</h4>
-                <p className="text-sm text-muted-foreground">
-                  Go to Profile → Delete all my data. This permanently removes all your information from the app.
-                </p>
-              </div>
+                <div className="border-b border-border/50 pb-3">
+                  <h4 className="font-medium text-foreground mb-2">🌓 How do I change the theme?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Go to Profile → Settings → Theme. Choose Light, Dark, or System (follows your device preference).
+                  </p>
+                </div>
 
-              <div>
-                <h4 className="font-medium text-foreground mb-2">The app isn't working correctly</h4>
-                <p className="text-sm text-muted-foreground">
-                  Try restarting the app, clearing cache, or reinstalling. If issues persist, contact support with details about your device and the problem.
-                </p>
+                <div className="border-b border-border/50 pb-3">
+                  <h4 className="font-medium text-foreground mb-2">📊 What health metrics can I track?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Track pain levels, energy, sleep quality, temperature, water intake, exercise, medications, and supplements for comprehensive insights.
+                  </p>
+                </div>
+
+                <div className="border-b border-border/50 pb-3">
+                  <h4 className="font-medium text-foreground mb-2">🗑️ How do I delete my account?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Go to Profile → Delete account. This permanently removes your account and all data from the server.
+                  </p>
+                </div>
+
+                <div className="border-b border-border/50 pb-3">
+                  <h4 className="font-medium text-foreground mb-2">📱 Is my data secure?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Yes! Data is encrypted and stored securely. The app works online-only with no local storage of sensitive information.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-medium text-foreground mb-2">🐛 The app isn't working correctly</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Try refreshing the page, checking your internet connection, or clearing browser cache. For persistent issues, contact support.
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
+            </CardContent>
         </Card>
 
         {/* Troubleshooting */}
@@ -161,23 +182,30 @@ const HelpSupportScreen = () => {
           <CardContent className="space-y-4">
             <div className="space-y-3">
               <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">🔄 Sync Issues</h4>
+                <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">🌐 Internet Connection</h4>
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  Check your internet connection and try the "Sync now" button in Profile settings.
+                  The app requires an internet connection to save data and load insights. Check your connection if features aren't working.
                 </p>
               </div>
 
               <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">📱 App Performance</h4>
+                <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">🔒 App Lock Issues</h4>
                 <p className="text-sm text-green-700 dark:text-green-300">
-                  Restart the app or clear cache in your device settings to improve performance.
+                  If biometric authentication fails, try using PIN instead. Make sure your device supports biometrics.
                 </p>
               </div>
 
               <div className="p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
-                <h4 className="font-medium text-purple-800 dark:text-purple-200 mb-2">🔔 Notifications</h4>
+                <h4 className="font-medium text-purple-800 dark:text-purple-200 mb-2">🌓 Theme Problems</h4>
                 <p className="text-sm text-purple-700 dark:text-purple-300">
-                  Ensure app notifications are enabled in your device settings and the app's notification toggle is on.
+                  Theme changes should apply immediately. If not working, try refreshing the page or clearing browser cache.
+                </p>
+              </div>
+
+              <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+                <h4 className="font-medium text-orange-800 dark:text-orange-200 mb-2">🤖 AI Insights Not Loading</h4>
+                <p className="text-sm text-orange-700 dark:text-orange-300">
+                  AI insights require logged cycle data. Start logging your symptoms and health metrics to unlock personalized insights.
                 </p>
               </div>
             </div>
@@ -212,9 +240,23 @@ const HelpSupportScreen = () => {
                 Terms of Service
               </Button>
 
+              <div className="p-3 bg-primary/5 rounded-lg">
+                <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-primary" />
+                  New Features
+                </h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• AI-powered health insights</li>
+                  <li>• Comprehensive health metrics tracking</li>
+                  <li>• Biometric app lock</li>
+                  <li>• Light/Dark/System themes</li>
+                  <li>• Account deletion</li>
+                </ul>
+              </div>
+
               <div className="p-3 bg-muted/50 rounded-lg">
                 <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-yellow-500" />
+                  <Shield className="w-4 h-4 text-green-500" />
                   Health Disclaimer
                 </h4>
                 <p className="text-sm text-muted-foreground">
@@ -266,7 +308,10 @@ const HelpSupportScreen = () => {
         <Card variant="glass" className="animate-slide-up" style={{ animationDelay: "0.5s" }}>
           <CardContent className="p-4">
             <div className="text-center space-y-1">
-              <p className="text-sm font-medium text-foreground">Moon Bloom Tracker v1.0.0</p>
+              <p className="text-sm font-medium text-foreground">Moon Bloom Tracker v2.0.0</p>
+              <p className="text-xs text-muted-foreground">
+                AI-powered insights • Enhanced health tracking • Biometric security
+              </p>
               <p className="text-xs text-muted-foreground">Made with 💕 by GhostScript</p>
             </div>
           </CardContent>

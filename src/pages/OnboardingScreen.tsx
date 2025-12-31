@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Heart, Shield, Calendar, Sparkles, ChevronRight, ChevronLeft } from "lucide-react";
-import { setOnboardingComplete, saveUser } from "@/lib/offlineStorage";
+
+import { useAuth } from "@/contexts/AuthContext";
+import { apiService } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface OnboardingStep {
@@ -15,24 +17,44 @@ interface OnboardingStep {
 
 const OnboardingScreen = () => {
   const navigate = useNavigate();
+  const { updateUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [lastPeriodDate, setLastPeriodDate] = useState("");
   const [cycleLength, setCycleLength] = useState("28");
 
-  const handleComplete = () => {
-    // Save user data with onboarding info
-    const user = {
-      name: "User", // This will be updated from auth context
-      email: "", // This will be updated from auth context
-      cycleLength: parseInt(cycleLength) || 28,
-      periodLength: 5,
-      lastPeriodStart: lastPeriodDate ? new Date(lastPeriodDate) : new Date(),
-      notificationsEnabled: true,
-      appLockEnabled: false,
-    };
-    saveUser(user);
-    setOnboardingComplete(true);
-    navigate("/home");
+  const handleComplete = async () => {
+    try {
+      // Update backend settings
+      await apiService.updateUserSettings({
+        cycleLength: parseInt(cycleLength) || 28,
+        lastPeriodStart: lastPeriodDate ? new Date(lastPeriodDate) : new Date(),
+        notificationsEnabled: true,
+        appLockEnabled: false,
+      });
+
+      // Update user data with onboarding info
+      const userData = {
+        cycleLength: parseInt(cycleLength) || 28,
+        periodLength: 5,
+        lastPeriodStart: lastPeriodDate ? new Date(lastPeriodDate) : new Date(),
+        notificationsEnabled: true,
+        appLockEnabled: false,
+       };
+       updateUser(userData);
+       navigate("/home");
+     } catch (error) {
+      console.error('Failed to save onboarding data:', error);
+      // Still proceed even if backend fails
+      const userData = {
+        cycleLength: parseInt(cycleLength) || 28,
+        periodLength: 5,
+        lastPeriodStart: lastPeriodDate ? new Date(lastPeriodDate) : new Date(),
+        notificationsEnabled: true,
+        appLockEnabled: false,
+      };
+       updateUser(userData);
+       navigate("/home");
+    }
   };
 
   const steps: OnboardingStep[] = [
@@ -207,17 +229,7 @@ const OnboardingScreen = () => {
           </Button>
         </div>
 
-        {isFirstStep && (
-          <button
-            onClick={() => {
-              setOnboardingComplete(true);
-              navigate("/home");
-            }}
-            className="block w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Skip for now
-          </button>
-        )}
+
       </div>
     </div>
   );

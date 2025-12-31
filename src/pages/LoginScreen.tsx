@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, Eye, EyeOff, Shield } from "lucide-react";
-import { isOnboardingComplete } from "@/lib/offlineStorage";
 
 const LoginScreen = () => {
   const navigate = useNavigate();
@@ -16,6 +15,8 @@ const LoginScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -23,13 +24,7 @@ const LoginScreen = () => {
 
     try {
       await login(email, password);
-
-      // Check if onboarding is complete
-      if (isOnboardingComplete()) {
-        navigate("/home");
-      } else {
-        navigate("/onboarding");
-      }
+      navigate("/home");
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.");
     } finally {

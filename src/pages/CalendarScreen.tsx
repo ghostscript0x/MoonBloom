@@ -21,8 +21,11 @@ const CalendarScreen = () => {
   const calendarData = useMemo(() => {
     if (!user || !cycles) return [];
 
-    // Don't show predictions if user hasn't completed onboarding
-    if (!user.lastPeriodStart) return [];
+    // Show basic predictions even if onboarding not complete
+    // Use a default lastPeriodStart if not set (for demo purposes)
+    const effectiveLastPeriodStart = user.lastPeriodStart ? new Date(user.lastPeriodStart) : new Date(Date.now() - 14 * 24 * 60 * 60 * 1000); // 14 days ago as default
+    const effectiveCycleLength = user.cycleLength || 28;
+    const effectivePeriodLength = user.periodLength || 5;
 
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const logs = [];
@@ -37,13 +40,12 @@ const CalendarScreen = () => {
         return cycleDate.toDateString() === date.toDateString();
       });
 
-      // Calculate cycle day (simplified - would need more complex logic for real prediction)
-      const daysSinceLastPeriod = user.lastPeriodStart ?
-        Math.floor((date.getTime() - new Date(user.lastPeriodStart).getTime()) / (1000 * 60 * 60 * 24)) : 0;
-      const cycleDay = daysSinceLastPeriod > 0 ? (daysSinceLastPeriod % (user.cycleLength || 28)) + 1 : undefined;
-      const isPeriod = cycleDay && cycleDay <= (user.periodLength || 5);
-      const isFertile = cycleDay && cycleDay >= 10 && cycleDay <= 16;
-      const isOvulation = cycleDay === 14;
+       // Calculate cycle day (simplified - would need more complex logic for real prediction)
+       const daysSinceLastPeriod = Math.floor((date.getTime() - effectiveLastPeriodStart.getTime()) / (1000 * 60 * 60 * 24));
+       const cycleDay = daysSinceLastPeriod > 0 ? (daysSinceLastPeriod % effectiveCycleLength) + 1 : undefined;
+       const isPeriod = cycleDay && cycleDay <= effectivePeriodLength;
+       const isFertile = cycleDay && cycleDay >= 10 && cycleDay <= 16;
+       const isOvulation = cycleDay === 14;
 
       logs.push({
         date,

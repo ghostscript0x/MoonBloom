@@ -10,7 +10,7 @@ import MoodSelector from "@/components/MoodSelector";
 import SymptomToggle from "@/components/SymptomToggle";
 import SyncIndicator from "@/components/SyncIndicator";
 import { useCreateCycle } from "@/hooks/useApi";
-import { Droplets, Save, Check, X, Pill, Battery, Moon, Heart, Thermometer } from "lucide-react";
+import { Droplets, Save, Check, X, Pill, Battery, Moon, Heart, Thermometer, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,17 +36,97 @@ const LogScreen = () => {
   const [energyLevel, setEnergyLevel] = useState<number[]>([5]);
   const [sleepQuality, setSleepQuality] = useState<string>("");
   const [temperature, setTemperature] = useState<string>("");
+  const [temperatureError, setTemperatureError] = useState<string>("");
   const [medications, setMedications] = useState<string[]>([]);
   const [supplements, setSupplements] = useState<string[]>([]);
+
+  // Progressive disclosure for health tab
+  const [expandedHealthSections, setExpandedHealthSections] = useState<Set<string>>(new Set());
+
+  const toggleHealthSection = (section: string) => {
+    const newExpanded = new Set(expandedHealthSections);
+    if (newExpanded.has(section)) {
+      newExpanded.delete(section);
+    } else {
+      newExpanded.add(section);
+    }
+    setExpandedHealthSections(newExpanded);
+  };
+
+  // Helper component for expandable health sections
+  const ExpandableSection = ({
+    title,
+    icon,
+    section,
+    children,
+    isExpanded,
+    onToggle
+  }: {
+    title: string;
+    icon: React.ReactNode;
+    section: string;
+    children: React.ReactNode;
+    isExpanded: boolean;
+    onToggle: () => void;
+  }) => (
+    <div className="border border-border rounded-xl overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          {icon}
+          <span className="font-medium">{title}</span>
+        </div>
+        {isExpanded ? (
+          <ChevronUp className="w-4 h-4 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        )}
+      </button>
+      {isExpanded && (
+        <div className="px-4 pb-4 animate-fade-in">
+          {children}
+        </div>
+      )}
+    </div>
+  );
   const [waterIntake, setWaterIntake] = useState<number[]>([0]);
   const [exercise, setExercise] = useState<string>("");
 
   useEffect(() => {
     const tab = searchParams.get("tab") as TabType;
-    if (tab && ["mood", "symptoms", "period"].includes(tab)) {
+    if (tab && ["mood", "symptoms", "period", "health"].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
+
+  // Temperature validation
+  const validateTemperature = (value: string): boolean => {
+    if (!value) return true; // Empty is valid
+    const temp = parseFloat(value);
+    return !isNaN(temp) && temp >= 95 && temp <= 105;
+  };
+
+  const handleTemperatureChange = (value: string) => {
+    setTemperature(value);
+    if (value && !validateTemperature(value)) {
+      setTemperatureError("Please enter a temperature between 95°F and 105°F");
+    } else {
+      setTemperatureError("");
+    }
+  };
+
+  // Sanitize medication/supplement input
+  const parseListInput = (input: string): string[] => {
+    return input
+      .split(',')
+      .map(item => item.trim())
+      .filter(item => item.length > 0 && item.length <= 50) // Prevent overly long items
+      .filter((item, index, arr) => arr.indexOf(item) === index); // Remove duplicates
+  };
+
+
 
   const handleSymptomToggle = (symptomId: string) => {
     setSelectedSymptoms((prev) =>
@@ -57,11 +137,29 @@ const LogScreen = () => {
   };
 
   const handleSave = async () => {
+    if (isSaving) return; // Prevent double submission
+
     setIsSaving(true);
 
     try {
-      let cycleData: any = {
-        date: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
+      const cycleData: {
+        date: string | Date;
+        phase: string;
+        flow?: string;
+        symptoms?: string[];
+        mood?: string;
+        notes?: string;
+        painIntensity?: number;
+        energyLevel?: number;
+        sleepQuality?: string;
+        temperature?: number;
+        waterIntake?: number;
+        exercise?: string;
+        medications?: string[];
+        supplements?: string[];
+      } = {
+        date: new Date(), // Send as Date object
+        phase: 'follicular', // Default phase for general logging
         notes: notes || undefined,
       };
 
@@ -119,6 +217,15 @@ const LogScreen = () => {
         }
       }
 
+      // Ensure phase is always valid
+      const validPhases = ['menstrual', 'follicular', 'ovulation', 'luteal'];
+      if (!validPhases.includes(cycleData.phase)) {
+        console.error('Invalid phase detected:', cycleData.phase, 'Setting to follicular');
+        cycleData.phase = 'follicular'; // Fallback to safe default
+      }
+
+      console.log('Saving cycle data:', cycleData); // Debug log
+
       await createCycleMutation.mutateAsync(cycleData);
 
       toast({
@@ -168,7 +275,7 @@ const LogScreen = () => {
   const canSave =
     (activeTab === "mood" && selectedMood) ||
     (activeTab === "symptoms" && selectedSymptoms.length > 0) ||
-    (activeTab === "health" && (painIntensity[0] > 0 || energyLevel[0] !== 5 || sleepQuality || temperature || medications.length > 0 || supplements.length > 0 || waterIntake[0] > 0 || exercise)) ||
+    (activeTab === "health" && (painIntensity[0] > 0 || energyLevel[0] !== 5 || sleepQuality || (temperature && !temperatureError) || medications.length > 0 || supplements.length > 0 || waterIntake[0] > 0 || exercise)) ||
     (activeTab === "period" && periodStarted !== null);
 
   return (
@@ -266,167 +373,206 @@ const LogScreen = () => {
             <CardHeader>
               <CardTitle className="text-lg">Health & Wellness</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Pain Intensity */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-destructive" />
-                  <label className="text-sm font-medium text-foreground">
-                    Pain Intensity (0-10)
-                  </label>
-                </div>
-                <div className="px-2">
-                  <Slider
-                    value={painIntensity}
-                    onValueChange={setPainIntensity}
-                    max={10}
-                    step={1}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                    <span>No pain</span>
-                    <span className="font-medium">Level: {painIntensity[0]}</span>
-                    <span>Severe pain</span>
+            <CardContent className="space-y-4">
+              {/* Quick Health Metrics */}
+              <ExpandableSection
+                title="Physical Health"
+                icon={<Heart className="w-4 h-4 text-destructive" />}
+                section="physical"
+                isExpanded={expandedHealthSections.has("physical")}
+                onToggle={() => toggleHealthSection("physical")}
+              >
+                <div className="space-y-4">
+                  {/* Pain Intensity */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-foreground">
+                      Pain Intensity (0-10)
+                    </label>
+                    <div className="px-2">
+                      <Slider
+                        value={painIntensity}
+                        onValueChange={setPainIntensity}
+                        max={10}
+                        step={1}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                        <span>No pain</span>
+                        <span className="font-medium">Level: {painIntensity[0]}</span>
+                        <span>Severe pain</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Energy Level */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-foreground">
+                      Energy Level (1-10)
+                    </label>
+                    <div className="px-2">
+                      <Slider
+                        value={energyLevel}
+                        onValueChange={setEnergyLevel}
+                        min={1}
+                        max={10}
+                        step={1}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                        <span>Exhausted</span>
+                        <span className="font-medium">Level: {energyLevel[0]}</span>
+                        <span>Energetic</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </ExpandableSection>
 
-              {/* Energy Level */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Battery className="w-4 h-4 text-primary" />
-                  <label className="text-sm font-medium text-foreground">
-                    Energy Level (1-10)
-                  </label>
-                </div>
-                <div className="px-2">
-                  <Slider
-                    value={energyLevel}
-                    onValueChange={setEnergyLevel}
-                    min={1}
-                    max={10}
-                    step={1}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                    <span>Exhausted</span>
-                    <span className="font-medium">Level: {energyLevel[0]}</span>
-                    <span>Energetic</span>
+              {/* Sleep & Temperature */}
+              <ExpandableSection
+                title="Sleep & Temperature"
+                icon={<Moon className="w-4 h-4 text-blue-500" />}
+                section="sleep"
+                isExpanded={expandedHealthSections.has("sleep")}
+                onToggle={() => toggleHealthSection("sleep")}
+              >
+                <div className="space-y-4">
+                  {/* Sleep Quality */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      Sleep Quality
+                    </label>
+                    <Select value={sleepQuality} onValueChange={setSleepQuality}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="How did you sleep?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="excellent">Excellent</SelectItem>
+                        <SelectItem value="good">Good</SelectItem>
+                        <SelectItem value="fair">Fair</SelectItem>
+                        <SelectItem value="poor">Poor</SelectItem>
+                        <SelectItem value="terrible">Terrible</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Temperature */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      Basal Temperature (°F)
+                    </label>
+                    <div className="space-y-1">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="95"
+                        max="105"
+                        placeholder="97.8"
+                        value={temperature}
+                        onChange={(e) => handleTemperatureChange(e.target.value)}
+                        className={cn(
+                          "w-full px-3 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-offset-2",
+                          temperatureError
+                            ? "border-destructive focus:ring-destructive"
+                            : "border-input focus:ring-ring"
+                        )}
+                      />
+                      {temperatureError && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          {temperatureError}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </ExpandableSection>
 
-              {/* Sleep Quality */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Moon className="w-4 h-4 text-blue-500" />
-                  <label className="text-sm font-medium text-foreground">
-                    Sleep Quality
-                  </label>
-                </div>
-                <Select value={sleepQuality} onValueChange={setSleepQuality}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="How did you sleep?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="excellent">Excellent</SelectItem>
-                    <SelectItem value="good">Good</SelectItem>
-                    <SelectItem value="fair">Fair</SelectItem>
-                    <SelectItem value="poor">Poor</SelectItem>
-                    <SelectItem value="terrible">Terrible</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Nutrition & Exercise */}
+              <ExpandableSection
+                title="Nutrition & Exercise"
+                icon={<Battery className="w-4 h-4 text-primary" />}
+                section="nutrition"
+                isExpanded={expandedHealthSections.has("nutrition")}
+                onToggle={() => toggleHealthSection("nutrition")}
+              >
+                <div className="space-y-4">
+                  {/* Water Intake */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-foreground">
+                      Water Intake (glasses)
+                    </label>
+                    <div className="px-2">
+                      <Slider
+                        value={waterIntake}
+                        onValueChange={setWaterIntake}
+                        max={12}
+                        step={1}
+                        className="w-full"
+                      />
+                      <div className="text-center text-xs text-muted-foreground mt-1">
+                        <span className="font-medium">{waterIntake[0]} glasses</span>
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Temperature */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Thermometer className="w-4 h-4 text-orange-500" />
-                  <label className="text-sm font-medium text-foreground">
-                    Basal Temperature (°F)
-                  </label>
-                </div>
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder="97.8"
-                  value={temperature}
-                  onChange={(e) => setTemperature(e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                />
-              </div>
-
-              {/* Water Intake */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Droplets className="w-4 h-4 text-blue-500" />
-                  <label className="text-sm font-medium text-foreground">
-                    Water Intake (glasses)
-                  </label>
-                </div>
-                <div className="px-2">
-                  <Slider
-                    value={waterIntake}
-                    onValueChange={setWaterIntake}
-                    max={12}
-                    step={1}
-                    className="w-full"
-                  />
-                  <div className="text-center text-xs text-muted-foreground mt-1">
-                    <span className="font-medium">{waterIntake[0]} glasses</span>
+                  {/* Exercise */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      Exercise/Activity
+                    </label>
+                    <Select value={exercise} onValueChange={setExercise}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Did you exercise today?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No exercise</SelectItem>
+                        <SelectItem value="light">Light activity</SelectItem>
+                        <SelectItem value="moderate">Moderate exercise</SelectItem>
+                        <SelectItem value="intense">Intense workout</SelectItem>
+                        <SelectItem value="yoga">Yoga/Meditation</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              </div>
-
-              {/* Exercise */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
-                  Exercise/Activity
-                </label>
-                <Select value={exercise} onValueChange={setExercise}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Did you exercise today?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No exercise</SelectItem>
-                    <SelectItem value="light">Light activity</SelectItem>
-                    <SelectItem value="moderate">Moderate exercise</SelectItem>
-                    <SelectItem value="intense">Intense workout</SelectItem>
-                    <SelectItem value="yoga">Yoga/Meditation</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              </ExpandableSection>
 
               {/* Medications & Supplements */}
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Pill className="w-4 h-4 text-green-500" />
+              <ExpandableSection
+                title="Medications & Supplements"
+                icon={<Pill className="w-4 h-4 text-green-500" />}
+                section="medications"
+                isExpanded={expandedHealthSections.has("medications")}
+                onToggle={() => toggleHealthSection("medications")}
+              >
+                <div className="space-y-4">
+                  <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">
                       Medications Taken
                     </label>
+                    <Textarea
+                      placeholder="List any medications you took today..."
+                      value={medications.join(', ')}
+                      onChange={(e) => setMedications(parseListInput(e.target.value))}
+                      className="min-h-[60px] resize-none"
+                    />
                   </div>
-                  <Textarea
-                    placeholder="List any medications you took today..."
-                    value={medications.join(', ')}
-                    onChange={(e) => setMedications(e.target.value.split(',').map(m => m.trim()).filter(m => m))}
-                    className="min-h-[60px] resize-none"
-                  />
-                </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
-                    Supplements/Vitamins
-                  </label>
-                  <Textarea
-                    placeholder="List any supplements you took today..."
-                    value={supplements.join(', ')}
-                    onChange={(e) => setSupplements(e.target.value.split(',').map(s => s.trim()).filter(s => s))}
-                    className="min-h-[60px] resize-none"
-                  />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      Supplements/Vitamins
+                    </label>
+                    <Textarea
+                      placeholder="List any supplements you took today..."
+                      value={supplements.join(', ')}
+                      onChange={(e) => setSupplements(parseListInput(e.target.value))}
+                      className="min-h-[60px] resize-none"
+                    />
+                  </div>
                 </div>
-              </div>
+              </ExpandableSection>
 
+              {/* Notes */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">
                   Additional Notes

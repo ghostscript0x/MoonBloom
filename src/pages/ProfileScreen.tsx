@@ -7,7 +7,9 @@ import { Switch } from "@/components/ui/switch";
 import BottomNav from "@/components/BottomNav";
 import SyncIndicator from "@/components/SyncIndicator";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUserProfile, useUpdateUserSettings } from "@/hooks/useApi";
+import { useTheme } from "@/contexts/ThemeContext";
+import { setupAppLock } from "@/lib/biometricAuth";
+import { useUserProfile, useUpdateUserSettings, useDeleteAccount } from "@/hooks/useApi";
 import {
   User,
   Bell,
@@ -18,12 +20,13 @@ import {
   ChevronRight,
   Calendar,
   Mail,
-  Cloud,
   Heart,
-  Download,
   Settings,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
-import { clearAllData, getSyncStatus, syncWithServer, exportData } from "@/lib/offlineStorage";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -86,13 +89,15 @@ const ProfileScreen = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, logout, updateUser } = useAuth();
+  const { theme, setTheme } = useTheme();
   const { data: userProfile } = useUserProfile();
   const updateSettingsMutation = useUpdateUserSettings();
+  const deleteAccountMutation = useDeleteAccount();
 
   const [notifications, setNotifications] = useState(user?.notificationsEnabled ?? true);
   const [appLock, setAppLock] = useState(user?.appLockEnabled ?? false);
   const [cycleLength, setCycleLength] = useState(String(user?.cycleLength ?? 28));
-  const [syncStatus, setSyncStatus] = useState(getSyncStatus());
+
   const [editingCycleLength, setEditingCycleLength] = useState(false);
   const [tempCycleLength, setTempCycleLength] = useState("");
 
@@ -119,13 +124,21 @@ const ProfileScreen = () => {
     navigate("/");
   };
 
-  const handleDeleteData = () => {
-    clearAllData();
-    toast({
-      title: "Data deleted",
-      description: "All your data has been removed from this device.",
-    });
-    navigate("/");
+  const handleDeleteAccount = async () => {
+    try {
+      await deleteAccountMutation.mutateAsync();
+      toast({
+        title: "Account deleted",
+        description: "Your account and all data have been permanently deleted.",
+      });
+      navigate("/login");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete account. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSettingsChange = async (settings: {
@@ -191,41 +204,44 @@ const ProfileScreen = () => {
   };
 
   const handleAppLockChange = async (enabled: boolean) => {
-    setAppLock(enabled);
-
     if (enabled) {
-      // Check if we can use biometric/PIN
-      const hasBiometric = await checkBiometricSupport();
-      if (!hasBiometric) {
-        // For demo, we'll use a simple PIN system
+      // Set up biometric/PIN authentication
+      const result = await setupAppLock();
+      if (result.success) {
+        setAppLock(true);
+        localStorage.setItem('app_lock_type', result.type);
         toast({
           title: "App lock enabled",
-          description: "You'll need to enter a PIN to unlock the app.",
+          description: `App will be locked using ${result.type === 'biometric' ? 'biometric authentication' : 'PIN'}.`,
         });
+
+        // Set up visibility change listener to lock app when backgrounded
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden && enabled) {
+            sessionStorage.setItem('app_was_locked', 'true');
+          }
+        });
+
+        handleSettingsChange({ appLockEnabled: true });
       } else {
         toast({
-          title: "App lock enabled",
-          description: "You'll need to authenticate to unlock the app.",
+          title: "Setup failed",
+          description: "Could not set up app lock. Please try again.",
+          variant: "destructive",
         });
+        setAppLock(false);
       }
-
-      // Set up visibility change listener to lock app when backgrounded
-      document.addEventListener('visibilitychange', () => {
-        if (document.hidden && enabled) {
-          sessionStorage.setItem('app_was_locked', 'true');
-        }
-      });
     } else {
+      setAppLock(false);
+      localStorage.removeItem('app_lock_type');
+      localStorage.removeItem('app_lock_pin');
+      sessionStorage.removeItem('app_was_locked');
       toast({
         title: "App lock disabled",
-        description: "The app will open without authentication.",
+        description: "The app will no longer require authentication.",
       });
-
-      // Remove the listener
-      document.removeEventListener('visibilitychange', () => {});
+      handleSettingsChange({ appLockEnabled: false });
     }
-
-    handleSettingsChange({ appLockEnabled: enabled });
   };
 
   const handleCycleLengthChange = (length: string) => {
@@ -265,47 +281,9 @@ const ProfileScreen = () => {
     setTempCycleLength("");
   };
 
-  const handleSync = async () => {
-    try {
-      const success = await syncWithServer();
-      if (success) {
-        setSyncStatus(getSyncStatus());
-        toast({
-          title: "Sync successful",
-          description: "Your data has been synchronized.",
-        });
-      } else {
-        toast({
-          title: "Sync failed",
-          description: "Please check your internet connection.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Sync error",
-        description: "An unexpected error occurred during sync.",
-        variant: "destructive",
-      });
-    }
-  };
 
-  const handleExport = () => {
-    const data = exportData();
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'moon-bloom-data.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast({
-      title: "Data exported",
-      description: "Your data has been downloaded as a JSON file.",
-    });
-  };
+
+
 
 
 
@@ -328,6 +306,13 @@ const ProfileScreen = () => {
       type: "toggle",
       checked: notifications,
       onCheckedChange: handleNotificationChange,
+    },
+    {
+      icon: Settings,
+      label: "Theme",
+      type: "theme-select",
+      value: theme,
+      onThemeChange: setTheme,
     },
     {
       icon: Lock,
@@ -402,6 +387,18 @@ const ProfileScreen = () => {
                   </span>
                 )}
 
+                {item.type === "theme-select" && (
+                  <select
+                    value={item.value}
+                    onChange={(e) => item.onThemeChange(e.target.value as 'light' | 'dark' | 'system')}
+                    className="bg-transparent border-none text-sm text-muted-foreground focus:outline-none focus:ring-0 cursor-pointer"
+                  >
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="system">System</option>
+                  </select>
+                )}
+
                 {item.type === "editable" && item.label === "Cycle length" && (
                   editingCycleLength ? (
                     <div className="flex items-center gap-2">
@@ -459,30 +456,7 @@ const ProfileScreen = () => {
           </CardContent>
         </Card>
 
-        {/* Sync Status */}
-        <Card variant="glass" className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Cloud className="w-4 h-4" />
-              Sync Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <SyncIndicator showLabel />
-                {syncStatus.lastSynced && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Last synced: {syncStatus.lastSynced.toLocaleString()}
-                  </p>
-                )}
-              </div>
-               <Button variant="soft" size="sm" onClick={handleSync}>
-                 Sync now
-               </Button>
-            </div>
-          </CardContent>
-        </Card>
+
 
         {/* Wellness & Data */}
         <Card variant="glass" className="animate-slide-up" style={{ animationDelay: "0.25s" }}>
@@ -506,18 +480,7 @@ const ProfileScreen = () => {
                <ChevronRight className="w-5 h-5 text-muted-foreground" />
              </div>
 
-             <div className="flex items-center justify-between py-3 cursor-pointer" onClick={handleExport}>
-               <div className="flex items-center gap-3">
-                 <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center">
-                   <Download className="w-4 h-4 text-foreground" />
-                 </div>
-                 <div>
-                   <p className="font-medium text-foreground">Export Data</p>
-                   <p className="text-xs text-muted-foreground">Download your health records</p>
-                 </div>
-               </div>
-               <ChevronRight className="w-5 h-5 text-muted-foreground" />
-             </div>
+
           </CardContent>
         </Card>
 
@@ -562,10 +525,10 @@ const ProfileScreen = () => {
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={handleDeleteData}
+                  onClick={handleDeleteAccount}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  Delete everything
+                  Delete account
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

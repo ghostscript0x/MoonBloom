@@ -64,6 +64,7 @@ router.put('/settings', protect, async (req, res) => {
     user.notificationsEnabled = req.body.notificationsEnabled ?? user.notificationsEnabled;
     user.appLockEnabled = req.body.appLockEnabled ?? user.appLockEnabled;
     user.cycleLength = req.body.cycleLength ?? user.cycleLength;
+    user.lastPeriodStart = req.body.lastPeriodStart ?? user.lastPeriodStart;
 
     await user.save();
 
@@ -73,9 +74,37 @@ router.put('/settings', protect, async (req, res) => {
         notificationsEnabled: user.notificationsEnabled,
         appLockEnabled: user.appLockEnabled,
         cycleLength: user.cycleLength,
+        lastPeriodStart: user.lastPeriodStart,
       },
     });
   } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// @desc    Delete user account
+// @route   DELETE /api/users
+// @access  Private
+router.delete('/', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Delete all user's cycles
+    await Cycle.deleteMany({ user: req.user.id });
+
+    // Delete user account
+    await User.findByIdAndDelete(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Account deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete account error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });

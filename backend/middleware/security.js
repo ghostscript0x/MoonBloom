@@ -30,25 +30,25 @@ const security = (app) => {
   };
   app.use(cors(corsOptions));
 
-  // Rate limiting - more restrictive for auth routes
-  const generalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 mins
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
+   // Rate limiting - DISABLED for development
+   // const generalLimiter = rateLimit({
+   //   windowMs: 15 * 60 * 1000, // 15 mins
+   //   max: 100, // limit each IP to 100 requests per windowMs
+   //   message: 'Too many requests from this IP, please try again later.',
+   //   standardHeaders: true,
+   //   legacyHeaders: false,
+   // });
 
-  const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 mins
-    max: 5, // limit each IP to 5 auth attempts per windowMs
-    message: 'Too many authentication attempts, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
+   // const authLimiter = rateLimit({
+   //   windowMs: 15 * 60 * 1000, // 15 mins
+   //   max: 5, // limit each IP to 5 auth attempts per windowMs
+   //   message: 'Too many authentication attempts, please try again later.',
+   //   standardHeaders: true,
+   //   legacyHeaders: false,
+   // });
 
-  app.use('/api/', generalLimiter);
-  app.use('/api/auth/', authLimiter);
+   // app.use('/api/', generalLimiter);
+   // app.use('/api/auth/', authLimiter);
 
   // Prevent parameter pollution
   app.use(hpp());

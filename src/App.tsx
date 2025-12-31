@@ -3,10 +3,41 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import AppLock from "@/components/AppLock";
 import SplashScreen from "./pages/SplashScreen";
+
+// Component to handle root route redirection based on auth status
+const RootRedirect = () => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <SplashScreen />; // Show loading while checking auth
+  }
+
+  if (user) {
+    return <Navigate to="/home" replace />;
+  }
+
+  return <SplashScreen />;
+};
+
+// Protected route component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <SplashScreen />; // Show loading while checking auth
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+};
 import LoginScreen from "./pages/LoginScreen";
 import SignupScreen from "./pages/SignupScreen";
 import OTPVerificationScreen from "./pages/OTPVerificationScreen";
@@ -25,12 +56,13 @@ import TermsOfServiceScreen from "./pages/TermsOfServiceScreen";
 import HelpSupportScreen from "./pages/HelpSupportScreen";
 import ResetPasswordScreen from "./pages/ResetPasswordScreen";
 import NotFound from "./pages/NotFound";
-import { getUser } from "@/lib/offlineStorage";
+
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   const [isLocked, setIsLocked] = useState(false);
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
     // Register service worker for notifications
@@ -44,19 +76,10 @@ const AppContent = () => {
         });
     }
 
-    // Check if app lock is enabled on app start
-    const user = getUser();
-    if (user?.appLockEnabled) {
-      // For demo, we'll show lock screen briefly on refresh
-      // In production, this would check if app was backgrounded
-      const shouldLock = sessionStorage.getItem('app_was_locked') === 'true' ||
-                        !sessionStorage.getItem('app_unlocked_at');
-
-      if (shouldLock) {
-        setIsLocked(true);
-      }
-    }
+    // App lock disabled - no local storage
   }, []);
+
+
 
   const handleUnlock = () => {
     setIsLocked(false);
@@ -78,24 +101,60 @@ const AppContent = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<SplashScreen />} />
+        <Route path="/" element={<RootRedirect />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/signup" element={<SignupScreen />} />
         <Route path="/verify-otp" element={<OTPVerificationScreen />} />
         <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
-        <Route path="/onboarding" element={<OnboardingScreen />} />
-        <Route path="/home" element={<HomeScreen />} />
-        <Route path="/log" element={<LogScreen />} />
-        <Route path="/calendar" element={<CalendarScreen />} />
-        <Route path="/day/:date" element={<DayDetailsScreen />} />
-        <Route path="/profile" element={<ProfileScreen />} />
-          <Route path="/wellness" element={<WellnessScreen />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicyScreen />} />
-          <Route path="/terms-of-service" element={<TermsOfServiceScreen />} />
-          <Route path="/help-support" element={<HelpSupportScreen />} />
-          <Route path="/reset-password" element={<ResetPasswordScreen />} />
-          <Route path="/fertility" element={<FertilityScreen />} />
-          <Route path="/insights" element={<InsightsScreen />} />
+        <Route path="/onboarding" element={
+          <ProtectedRoute>
+            <OnboardingScreen />
+          </ProtectedRoute>
+        } />
+        <Route path="/home" element={
+          <ProtectedRoute>
+            <HomeScreen />
+          </ProtectedRoute>
+        } />
+        <Route path="/log" element={
+          <ProtectedRoute>
+            <LogScreen />
+          </ProtectedRoute>
+        } />
+        <Route path="/calendar" element={
+          <ProtectedRoute>
+            <CalendarScreen />
+          </ProtectedRoute>
+        } />
+        <Route path="/day/:date" element={
+          <ProtectedRoute>
+            <DayDetailsScreen />
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <ProfileScreen />
+          </ProtectedRoute>
+        } />
+        <Route path="/wellness" element={
+          <ProtectedRoute>
+            <WellnessScreen />
+          </ProtectedRoute>
+        } />
+        <Route path="/privacy-policy" element={<PrivacyPolicyScreen />} />
+        <Route path="/terms-of-service" element={<TermsOfServiceScreen />} />
+        <Route path="/help-support" element={<HelpSupportScreen />} />
+        <Route path="/reset-password" element={<ResetPasswordScreen />} />
+        <Route path="/fertility" element={
+          <ProtectedRoute>
+            <FertilityScreen />
+          </ProtectedRoute>
+        } />
+        <Route path="/insights" element={
+          <ProtectedRoute>
+            <InsightsScreen />
+          </ProtectedRoute>
+        } />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
@@ -104,13 +163,15 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AppContent />
-      </TooltipProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AppContent />
+        </TooltipProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

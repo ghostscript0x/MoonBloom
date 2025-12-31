@@ -1,12 +1,20 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 const { registerValidation, loginValidation } = require('../middleware/validation');
 const { protect } = require('../middleware/auth');
 const sendEmail = require('../utils/sendEmail');
 
 const router = express.Router();
+
+// Less restrictive rate limiting for user verification endpoint
+const meLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 mins
+  max: 20, // Allow more requests for user verification
+  message: 'Too many verification requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -83,7 +91,7 @@ router.post('/login', loginValidation, async (req, res) => {
 // @desc    Get current logged in user
 // @route   GET /api/auth/me
 // @access  Private
- router.get('/me', protect, async (req, res) => {
+  router.get('/me', meLimiter, protect, async (req, res) => {
    try {
      const user = await User.findById(req.user.id).select('-password');
      if (!user) {

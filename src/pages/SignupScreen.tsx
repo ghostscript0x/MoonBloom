@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, Eye, EyeOff, Shield, Check } from "lucide-react";
 
+
 const SignupScreen = () => {
   const navigate = useNavigate();
   const { register } = useAuth();

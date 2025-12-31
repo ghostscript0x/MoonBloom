@@ -30,7 +30,7 @@ const loginValidation = (req, res, next) => {
 // Cycle validation
 const cycleValidation = (data) => {
   const schema = Joi.object({
-    date: Joi.date().required(),
+    date: Joi.alternatives().try(Joi.date(), Joi.string()).required(),
     phase: Joi.string().valid('menstrual', 'follicular', 'ovulation', 'luteal').required(),
     flow: Joi.string().valid('light', 'medium', 'heavy'),
     symptoms: Joi.array().items(Joi.string()),

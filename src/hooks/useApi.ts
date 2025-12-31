@@ -10,6 +10,7 @@ export const useUserProfile = () => {
       return response.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: false, // Disable retries for auth endpoints to avoid rate limiting
   });
 };
 
@@ -59,12 +60,21 @@ export const useCreateCycle = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (cycleData: {
-      date: string;
+      date: string | Date;
       phase: string;
       flow?: string;
       symptoms?: string[];
       mood?: string;
       notes?: string;
+      // Health tracking fields
+      painIntensity?: number;
+      energyLevel?: number;
+      sleepQuality?: string;
+      temperature?: number;
+      waterIntake?: number;
+      exercise?: string;
+      medications?: string[];
+      supplements?: string[];
     }) => {
       const response = await apiService.createCycle(cycleData);
       return response.data;
@@ -87,6 +97,15 @@ export const useUpdateCycle = () => {
         symptoms: string[];
         mood: string;
         notes: string;
+        // Health tracking fields
+        painIntensity?: number;
+        energyLevel?: number;
+        sleepQuality?: string;
+        temperature?: number;
+        waterIntake?: number;
+        exercise?: string;
+        medications?: string[];
+        supplements?: string[];
       }>;
     }) => {
       const response = await apiService.updateCycle(id, cycleData);
@@ -120,5 +139,46 @@ export const useAnalytics = () => {
       return response.data;
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+export const useInsights = () => {
+  return useQuery({
+    queryKey: ['insights'],
+    queryFn: async () => {
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
+      try {
+        const response = await apiService.getInsights();
+        clearTimeout(timeoutId);
+        return response.data;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Request timeout - AI insights temporarily unavailable');
+        }
+        throw error;
+      }
+    },
+    staleTime: 30 * 60 * 1000, // 30 minutes - insights don't change often
+    retry: (failureCount, error) => {
+      // Don't retry on timeout or auth errors
+      if (error?.message?.includes('timeout') || error?.message?.includes('401')) {
+        return false;
+      }
+      return failureCount < 2; // Retry up to 2 times for other errors
+    },
+    retryDelay: 1000, // 1 second delay between retries
+  });
+};
+
+export const useDeleteAccount = () => {
+  return useMutation({
+    mutationFn: async () => {
+      const response = await apiService.deleteAccount();
+      return response;
+    },
   });
 };

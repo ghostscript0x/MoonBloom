@@ -1,6 +1,5 @@
-import { Cloud, CloudOff, Check } from "lucide-react";
+import { Cloud, CloudOff } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getSyncStatus } from "@/lib/offlineStorage";
 import { useEffect, useState } from "react";
 
 interface SyncIndicatorProps {
@@ -9,11 +8,11 @@ interface SyncIndicatorProps {
 }
 
 const SyncIndicator = ({ showLabel = false, className }: SyncIndicatorProps) => {
-  const [status, setStatus] = useState(getSyncStatus());
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
-    const handleOnline = () => setStatus(prev => ({ ...prev, isOnline: true }));
-    const handleOffline = () => setStatus(prev => ({ ...prev, isOnline: false }));
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -29,28 +28,15 @@ const SyncIndicator = ({ showLabel = false, className }: SyncIndicatorProps) => 
       "flex items-center gap-2 text-xs",
       className
     )}>
-      {status.isOnline ? (
-        status.pendingChanges === 0 ? (
-          <>
-            <Check className="w-3.5 h-3.5 text-fertile" />
-            {showLabel && <span className="text-muted-foreground">Synced</span>}
-          </>
-        ) : (
-          <>
-            <Cloud className="w-3.5 h-3.5 text-primary animate-pulse" />
-            {showLabel && (
-              <span className="text-muted-foreground">
-                {status.pendingChanges} change{status.pendingChanges > 1 ? 's' : ''} to sync
-              </span>
-            )}
-          </>
-        )
+      {isOnline ? (
+        <>
+          <Cloud className="w-3.5 h-3.5 text-primary" />
+          {showLabel && <span className="text-muted-foreground">Online</span>}
+        </>
       ) : (
         <>
           <CloudOff className="w-3.5 h-3.5 text-muted-foreground" />
-          {showLabel && (
-            <span className="text-muted-foreground">Saved on your device</span>
-          )}
+          {showLabel && <span className="text-muted-foreground">Offline</span>}
         </>
       )}
     </div>

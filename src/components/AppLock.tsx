@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lock, Fingerprint } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { unlockApp } from "@/lib/biometricAuth";
 
 interface AppLockProps {
   onUnlock: () => void;
@@ -12,47 +13,30 @@ interface AppLockProps {
 const AppLock: React.FC<AppLockProps> = ({ onUnlock }) => {
   const [pin, setPin] = useState("");
   const [hasBiometric, setHasBiometric] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    checkBiometricSupport();
+    const lockType = localStorage.getItem('app_lock_type');
+    setHasBiometric(lockType === 'biometric');
   }, []);
 
-  const checkBiometricSupport = async () => {
-    if ('credentials' in navigator && 'get' in navigator.credentials) {
-      try {
-        const available = await navigator.credentials.get({
-          publicKey: {
-            challenge: new Uint8Array([1, 2, 3, 4]),
-            rp: { name: 'Moon Bloom Tracker' },
-            user: { id: new Uint8Array([1]), name: 'user', displayName: 'User' },
-            pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
-            authenticatorSelection: { authenticatorAttachment: 'platform' }
-          }
-        } as CredentialRequestOptions);
-        setHasBiometric(available !== null);
-      } catch {
-        setHasBiometric(false);
-      }
-    }
-  };
-
   const handleBiometricAuth = async () => {
+    setIsAuthenticating(true);
     try {
-      const credential = await navigator.credentials.get({
-        publicKey: {
-          challenge: new Uint8Array([1, 2, 3, 4, 5]),
-          rpId: window.location.hostname,
-          userVerification: 'required'
-        }
-      } as CredentialRequestOptions);
-
-      if (credential) {
+      const success = await unlockApp();
+      if (success) {
         toast({
           title: "Authenticated",
           description: "Welcome back!",
         });
         onUnlock();
+      } else {
+        toast({
+          title: "Authentication failed",
+          description: "Please try again or use PIN.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       toast({
@@ -60,23 +44,34 @@ const AppLock: React.FC<AppLockProps> = ({ onUnlock }) => {
         description: "Please try again or use PIN.",
         variant: "destructive",
       });
+    } finally {
+      setIsAuthenticating(false);
     }
   };
 
-  const handlePinSubmit = () => {
-    // For demo purposes, accept any 4-digit PIN
+  const handlePinSubmit = async () => {
     if (pin.length === 4) {
-      toast({
-        title: "Authenticated",
-        description: "Welcome back!",
-      });
-      onUnlock();
-    } else {
-      toast({
-        title: "Invalid PIN",
-        description: "Please enter a 4-digit PIN.",
-        variant: "destructive",
-      });
+      setIsAuthenticating(true);
+      try {
+        // For now, we'll use a simple check since we removed the complex auth
+        // In a real app, this would use proper PIN verification
+        const success = pin === localStorage.getItem('app_lock_pin');
+        if (success) {
+          toast({
+            title: "Authenticated",
+            description: "Welcome back!",
+          });
+          onUnlock();
+        } else {
+          toast({
+            title: "Invalid PIN",
+            description: "Please try again.",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        setIsAuthenticating(false);
+      }
     }
   };
 
@@ -98,33 +93,31 @@ const AppLock: React.FC<AppLockProps> = ({ onUnlock }) => {
               onClick={handleBiometricAuth}
               className="w-full"
               size="lg"
+              disabled={isAuthenticating}
             >
               <Fingerprint className="w-5 h-5 mr-2" />
-              Use Biometric
+              {isAuthenticating ? "Authenticating..." : "Use Biometric"}
             </Button>
           )}
 
           <div className="space-y-2">
             <Input
               type="password"
-              placeholder="Enter 4-digit PIN"
+              placeholder="Enter your PIN"
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
               maxLength={4}
               className="text-center text-lg tracking-widest"
+              disabled={isAuthenticating}
             />
             <Button
               onClick={handlePinSubmit}
               className="w-full"
-              disabled={pin.length !== 4}
+              disabled={pin.length !== 4 || isAuthenticating}
             >
-              Unlock
+              {isAuthenticating ? "Authenticating..." : "Unlock"}
             </Button>
           </div>
-
-          <p className="text-xs text-center text-muted-foreground">
-            For demo: Enter any 4 digits
-          </p>
         </CardContent>
       </Card>
     </div>

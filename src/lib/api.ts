@@ -124,6 +124,7 @@ class ApiService {
     notificationsEnabled?: boolean;
     appLockEnabled?: boolean;
     cycleLength?: number;
+    lastPeriodStart?: Date;
   }) {
     return this.request<{ success: boolean; data: any }>('/users/settings', {
       method: 'PUT',
@@ -141,12 +142,21 @@ class ApiService {
   }
 
   async createCycle(cycleData: {
-    date: string;
+    date: string | Date;
     phase: string;
     flow?: string;
     symptoms?: string[];
     mood?: string;
     notes?: string;
+    // Health tracking fields
+    painIntensity?: number;
+    energyLevel?: number;
+    sleepQuality?: string;
+    temperature?: number;
+    waterIntake?: number;
+    exercise?: string;
+    medications?: string[];
+    supplements?: string[];
   }) {
     return this.request<{ success: boolean; data: any }>('/cycles', {
       method: 'POST',
@@ -177,6 +187,16 @@ class ApiService {
   // Analytics endpoints
   async getAnalytics() {
     return this.request<{ success: boolean; data: any }>('/analytics');
+  }
+
+  async getInsights() {
+    return this.request<{ success: boolean; data: any }>('/analytics/insights');
+  }
+
+  async deleteAccount() {
+    return this.request<{ success: boolean; message: string }>('/users', {
+      method: 'DELETE',
+    });
   }
 }
 
