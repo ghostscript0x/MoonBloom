@@ -23,7 +23,7 @@ const SignupScreen = () => {
 
     try {
       await register(name, email, password);
-      navigate("/verify-otp");
+      navigate("/onboarding");
     } catch (err: any) {
       setError(err.message || "Registration failed. Please try again.");
     } finally {

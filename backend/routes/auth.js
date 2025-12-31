@@ -25,22 +25,8 @@ router.post('/register', registerValidation, async (req, res, next) => {
     const user = new User({ name, email, password });
     await user.save();
 
-    // Generate OTP for email verification
-    const otp = user.generateOTP();
-    await user.save();
-
     // Create token
     const token = user.getSignedJwtToken();
-
-     // Send OTP email asynchronously
-     sendEmail({
-       email: user.email,
-       subject: 'Verify Your Moon Bloom Account',
-       template: 'otp',
-       data: { name: user.name, otp: otp },
-     }).catch(emailError => {
-       console.error('Email sending failed:', emailError);
-     });
 
     res.status(201).json({
       success: true,

@@ -307,27 +307,7 @@ const ProfileScreen = () => {
     });
   };
 
-  const handleResendVerification = async () => {
-    try {
-      await fetch(`${import.meta.env.VITE_API_URL}/auth/resend-otp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('bloom_auth_token')}`,
-        },
-      });
-      toast({
-        title: "Verification email sent",
-        description: "Check your email for the verification code.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send verification email. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+
 
   const menuItems = [
     {
@@ -335,12 +315,6 @@ const ProfileScreen = () => {
       label: "Email",
       value: userProfile?.email || user?.email || "Loading...",
       type: "display",
-    },
-    {
-      icon: Mail,
-      label: "Verify Email",
-      type: "button",
-      onClick: handleResendVerification,
     },
     {
       icon: Calendar,
@@ -479,16 +453,6 @@ const ProfileScreen = () => {
                     checked={item.checked}
                     onCheckedChange={item.onCheckedChange}
                   />
-                )}
-
-                {item.type === "button" && (
-                  <Button
-                    size="sm"
-                    variant="soft"
-                    onClick={item.onClick}
-                  >
-                    Send
-                  </Button>
                 )}
               </div>
             ))}
