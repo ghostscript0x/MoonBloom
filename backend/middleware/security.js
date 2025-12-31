@@ -22,7 +22,7 @@ const security = (app) => {
   // Enable CORS with proper configuration
   const corsOptions = {
     origin: process.env.NODE_ENV === 'production'
-      ? process.env.FRONTEND_URL || false
+      ? process.env.FRONTEND_URL || true  // Temporarily allow all if not set
       : true, // Allow all origins in development
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
