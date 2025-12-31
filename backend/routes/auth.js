@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const { registerValidation, loginValidation } = require('../middleware/validation');
 const { protect } = require('../middleware/auth');
+const sendEmail = require('../utils/sendEmail');
 
 const router = express.Router();
 
