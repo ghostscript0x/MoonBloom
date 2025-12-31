@@ -31,19 +31,15 @@ router.post('/register', registerValidation, async (req, res, next) => {
     // Create token
     const token = user.getSignedJwtToken();
 
-    // Send OTP email
-    try {
-      const sendEmail = require('../utils/sendEmail');
-      await sendEmail({
-        email: user.email,
-        subject: 'Verify Your Moon Bloom Account',
-        template: 'otp',
-        data: { name: user.name, otp: otp },
-      });
-    } catch (emailError) {
-      // Log error but don't expose to client
-      console.error('Email sending failed:', emailError);
-    }
+     // Send OTP email asynchronously
+     sendEmail({
+       email: user.email,
+       subject: 'Verify Your Moon Bloom Account',
+       template: 'otp',
+       data: { name: user.name, otp: otp },
+     }).catch(emailError => {
+       console.error('Email sending failed:', emailError);
+     });
 
     res.status(201).json({
       success: true,
@@ -289,7 +285,7 @@ router.post('/reset-password', async (req, res) => {
 
 // @desc    Resend OTP
 // @route   POST /api/auth/resend-otp
-// @access  Private (requires temp token)
+// @access  Private (requires JWT or temp token)
 router.post('/resend-otp', async (req, res) => {
   // Get token from Authorization header
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -298,9 +294,21 @@ router.post('/resend-otp', async (req, res) => {
   }
 
   try {
-    // Verify token and get user
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
+    let user;
+
+    // Try to verify as JWT first (logged in user)
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      user = await User.findById(decoded.id);
+    } catch (jwtError) {
+      // If JWT fails, try as temp token
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        user = await User.findById(decoded.id);
+      } catch (tempError) {
+        return res.status(401).json({ success: false, message: 'Invalid token' });
+      }
+    }
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
@@ -310,19 +318,15 @@ router.post('/resend-otp', async (req, res) => {
     const otp = user.generateOTP();
     await user.save();
 
-    // Send OTP email
-    try {
-      const sendEmail = require('../utils/sendEmail');
-      await sendEmail({
-        email: user.email,
-        subject: 'Your Moon Bloom Verification Code',
-        template: 'otp',
-        data: { name: user.name, otp: otp },
-      });
-    } catch (emailError) {
+    // Send OTP email asynchronously
+    sendEmail({
+      email: user.email,
+      subject: 'Your Moon Bloom Verification Code',
+      template: 'otp',
+      data: { name: user.name, otp: otp },
+    }).catch(emailError => {
       console.error('OTP email failed:', emailError.message);
-      return res.status(500).json({ success: false, message: 'Failed to send email' });
-    }
+    });
 
     res.status(200).json({
       success: true,
